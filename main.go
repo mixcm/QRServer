@@ -133,8 +133,34 @@ func main() {
 							   toInt(r.request.FormValue("size")),
 							   r.request.FormValue("type")
 			
+			if data == "" || typ == "" {
+				r.writer.Write([]byte("Invalid Request."))
+				r.writer.WriteHeader(500)
+				return
+			}
+			
 			if !checkCache(r, data, size, r.request.FormValue("level"), typ){
 				generateQr(r, data, size, r.request.FormValue("level"), typ)
+			}
+
+			r.writer.WriteHeader(200)
+
+		})
+		g.Get("/qr/{data}/{@int:size}px-level{[1-4]:level}.{@ident:type}", func(r *req, vars map[string]string){
+			
+			dBytes, err := base64.StdEncoding.DecodeString(vars["data"])
+			if err != nil {
+				r.writer.Write([]byte("Invalid Request"))
+				r.writer.WriteHeader(500)
+				return
+			}
+			size, _ := strconv.Atoi(vars["size"])
+			data, level, typ := string(dBytes),
+									  vars["level"],
+									  vars["type"]
+			
+			if !checkCache(r, data, size, level, typ){
+				generateQr(r, data, size, level, typ)
 			}
 
 			r.writer.WriteHeader(200)
