@@ -53,7 +53,7 @@
         }
 
         .mixcm-container h2::after {
-            content: "2.1";
+            content: "0.1.0-alpha";
             position: absolute;
             top: -3px;
             font-size: 16px;
@@ -152,11 +152,13 @@
             <a href="https://github.com/mixcm/QRServer" target="_blank">GitHub</a>&nbsp;&nbsp;&nbsp;
             <a href="mailto:xtl@xtlsoft.top" target="_blank">联系作者</a>
         </div>
+        <h3>节点判断</h3>
+        <p>您可以这样判别节点：在 <code>X-Mixcm-Node</code> HTTP 头中包含了节点名称。</p>
         <h3>简单生成</h3>
         <blockquote>
-            调用方式：<a>https://qrcode.mixcm.cn/generate/?data={data}&height={height}&width={width}&formart={formart}</a><br>
-            参数说明：<code>data</code> 为 二维码数据，<code>height</code> 和 <code>width</code> 为高、宽（px），<code>formart</code> 为格式，支持 <code>png</code>、<code>jpg</code>、<code>gif</code>。
-            调用示例：<a>https://qrcode.mixcm.cn/generate/?data=test&height=200&width=200&formart=jpg</a>
+            调用方式：<a>https://qrcode.mixcm.cn/generate/?data={data}&size={size}&level={level}&formart={formart}</a><br>
+            参数说明：<code>data</code> 为 二维码数据，<code>size</code> 为高、宽（px），<code>level</code>为容错等级（1-4）， <code>formart</code> 为格式，支持 <code>png</code>、<code>jpg</code>、<code>gif</code>。<br>
+            调用示例：<a>https://qrcode.mixcm.cn/generate/?data=test&size=200&level=3&formart=jpg</a>
         </blockquote>
         <h3>Gravatar</h3>
         <blockquote>
