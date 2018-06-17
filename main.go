@@ -5,16 +5,82 @@ import (
 	"net/http"
 	"strconv"
 	"io/ioutil"
+	"os"
+	"bytes"
 	"image/png"
 	"image/jpeg"
+	"fmt"
 	"image/gif"
 	"flag"
 	"github.com/skip2/go-qrcode"
+	"encoding/base64"
 )
 
 type req struct {
 	writer http.ResponseWriter
 	request *http.Request
+}
+
+func checkCache(r *req, data string, size int, levelString string, typ string) bool {
+
+	fileName := fmt.Sprintf("%s-%dpx-level%s.%s", base64.StdEncoding.EncodeToString([]byte(data)), size, levelString, typ)
+
+	if d, err := ioutil.ReadFile("./data/cache/" + fileName); err == nil {
+		r.writer.Write(d)
+		var mime string
+		switch typ {
+			case "jpg":
+				mime = "image/jpeg"
+			case "png":
+				mime = "image/png"
+			case "gif":
+				mime = "image/gif"
+			default:
+				mime = "text/plain"
+		}
+		r.writer.Header().Add("content-type", mime)
+		return true
+	}else{
+		return false
+	}
+
+}
+
+func generateQr(r *req, data string, size int, levelString string, typ string) {
+	var level qrcode.RecoveryLevel
+	switch levelString {
+		case "1":
+			level = qrcode.Low
+		case "2":
+			level = qrcode.Medium
+		case "3":
+			level = qrcode.High
+		case "4":
+			level = qrcode.Highest
+	}
+	qr, _ := qrcode.New(data, level)
+	img := qr.Image(size)
+
+	buf := bytes.NewBufferString("")
+
+	switch typ {
+		case "jpg":
+			jpeg.Encode(buf, img, &jpeg.Options{Quality: jpeg.DefaultQuality})
+			r.writer.Header().Add("content-type", "image/jpeg")
+		case "png":
+			png.Encode(buf, img)
+			r.writer.Header().Add("content-type", "image/png")
+		case "gif":
+			gif.Encode(buf, img, &gif.Options{})
+			r.writer.Header().Add("content-type", "image/gif")
+	}
+
+	fileName := fmt.Sprintf("%s-%dpx-level%s.%s", base64.StdEncoding.EncodeToString([]byte(data)), size, levelString, typ)
+
+	ioutil.WriteFile("./data/cache/" + fileName, buf.Bytes(), os.ModeAppend)
+
+	r.writer.Write(buf.Bytes())
+
 }
 
 func readFile(path string) string {
@@ -66,30 +132,9 @@ func main() {
 			data, size, typ := r.request.FormValue("data"),
 							   toInt(r.request.FormValue("size")),
 							   r.request.FormValue("type")
-			var level qrcode.RecoveryLevel
-			switch r.request.FormValue("level") {
-				case "1":
-					level = qrcode.Low
-				case "2":
-					level = qrcode.Medium
-				case "3":
-					level = qrcode.High
-				case "4":
-					level = qrcode.Highest
-			}
-			qr, _ := qrcode.New(data, level)
-			img := qr.Image(size)
-
-			switch typ {
-				case "jpg":
-					jpeg.Encode(r.writer, img, &jpeg.Options{Quality: jpeg.DefaultQuality})
-					r.writer.Header().Add("content-type", "image/jpeg")
-				case "png":
-					png.Encode(r.writer, img)
-					r.writer.Header().Add("content-type", "image/png")
-				case "gif":
-					gif.Encode(r.writer, img, &gif.Options{})
-					r.writer.Header().Add("content-type", "image/gif")
+			
+			if !checkCache(r, data, size, r.request.FormValue("level"), typ){
+				generateQr(r, data, size, r.request.FormValue("level"), typ)
 			}
 
 			r.writer.WriteHeader(200)
